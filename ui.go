@@ -5,11 +5,12 @@ import (
 )
 
 var infoWidget * ui.Par
-var playlistWidget * ui.Par
+var playlistWidget * ui.List
 var scrollerWidget * ui.Par
 var visualizerWidget * ui.Par
 var controlsWidget * ui.Par
 
+var interfaceSongList []string
 func alignInterface() {
 	termHeight := ui.TermHeight()
 	playlistWidget.Height = termHeight - controlsWidget.Height
@@ -39,11 +40,13 @@ func startInterface() {
 	defer ui.Close()
 
 	infoWidget = ui.NewPar("")
-	playlistWidget = ui.NewPar("")
+	playlistWidget = ui.NewList()
 	scrollerWidget = ui.NewPar("")
 	visualizerWidget = ui.NewPar("")
 	controlsWidget = ui.NewPar("")
 	styleInterface()
+
+	playlistWidget.Items = interfaceSongList;
 	
 	ui.Body.AddRows(
 			ui.NewRow(
@@ -64,4 +67,11 @@ func startInterface() {
 		ui.Render(ui.Body)
 	})
 	ui.Loop()
+}
+
+func addSongsInterface(prefix int, inputList []string) {
+	interfaceSongList = make([]string, len(inputList))
+	for i, v := range inputList {
+		interfaceSongList[i] = v[prefix : ]
+	}
 }
