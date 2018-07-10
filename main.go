@@ -25,5 +25,8 @@ func main() {
 		os.Exit(1)
 	}
 	addSongsInterface(len(songDir), list)
+	songSelectCallback = func (num int) {
+		playSong(list[num])
+	}
 	startInterface()
 }

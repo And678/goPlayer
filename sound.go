@@ -9,8 +9,8 @@ import (
 
 var supportedFormats = []string{".mp3", ".wav", ".flac"}
 
-func playFile() {
-	f, err := os.Open("./song.wav") // Add real song
+func playSong(filename string) {
+	f, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
