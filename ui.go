@@ -11,11 +11,12 @@ var songSelectCallback selectCallback = func (int) {
 	
 }
 
-var infoWidget * ui.Par
+var infoWidget * ui.List
 var playlistWidget * ui.List
 var scrollerWidget * ui.Par
 var visualizerWidget * ui.Par
 var controlsWidget * ui.Par
+var fullSongList []Song
 
 var interfaceSongList []string
 var currentSongInterface int = -1
@@ -48,7 +49,7 @@ func startInterface() {
 	}
 	defer ui.Close()
 
-	infoWidget = ui.NewPar("")
+	infoWidget = ui.NewList()
 	playlistWidget = ui.NewList()
 	scrollerWidget = ui.NewPar("")
 	visualizerWidget = ui.NewPar("")
@@ -71,7 +72,10 @@ func startInterface() {
 		ui.StopLoop()
 	})
 	ui.Handle("/sys/kbd/<enter>", func(ui.Event) {
-		songSelectCallback(currentSongInterface)
+		//songSelectCallback(currentSongInterface)
+		renderCurrentSongInterface(currentSongInterface)
+		ui.Clear()
+		ui.Render(ui.Body)
 	})
 	ui.Handle("/sys/kbd/<up>", func(ui.Event) {
 		songUp()
@@ -93,10 +97,23 @@ func startInterface() {
 	ui.Loop()
 }
 
-func addSongsInterface(prefix int, inputList []string) {
+func renderCurrentSongInterface(num int) {
+	infoWidget.Items = []string{
+		"Artist: " + fullSongList[num].Artist(),
+		"Title:  " + fullSongList[num].Title(), 
+		"Album:  " + fullSongList[num].Album(),
+	}
+}
+
+func addSongsInterface(prefix int, inputList []Song) {
 	interfaceSongList = make([]string, len(inputList))
+	fullSongList = inputList
 	for i, v := range inputList {
-		interfaceSongList[i] = fmt.Sprintf("[%d] %s", i, v[prefix : ])
+		if (v.Metadata != nil) {
+			interfaceSongList[i] = fmt.Sprintf("[%d] %s - %s", i, v.Artist(), v.Title())
+		} else {
+			interfaceSongList[i] = fmt.Sprintf("[%d] %s", i, v.path[prefix : ])
+		}
 	}
 	chooseSongInterface(0)
 	currentSongInterface = 0
