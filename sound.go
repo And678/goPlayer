@@ -1,23 +1,38 @@
 package main
 import (
 	"github.com/faiface/beep/wav"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/flac"
 	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep"
 	"os"
 	"time"
-	"log"
+	"path/filepath"
 )
 
 var supportedFormats = []string{".mp3", ".wav", ".flac"}
 
-func playSong(filename string) {
+func playSong(filename string) (int ,error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
-	s, format, err2 := wav.Decode(f)
-	if err2 != nil {
-		log.Fatal(err2)
+	var s beep.StreamSeekCloser
+	var format beep.Format
+
+	switch fileExt := filepath.Ext(filename); fileExt {
+	case ".mp3":
+		s, format, err = mp3.Decode(f)
+	case ".wav":
+		s, format, err = wav.Decode(f)
+	case ".flac":
+		s, format, err = flac.Decode(f)
+	}
+	
+	if err != nil {
+		return 0, err
 	}
 	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
 	speaker.Play(s)
+	return int(float32(s.Len()) / float32(format.SampleRate)), nil
 }

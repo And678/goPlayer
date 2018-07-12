@@ -20,15 +20,13 @@ func main() {
 	} else {
 		songDir, err = homedir.Expand("~/Music/")
 		if (err != nil) {
-			log.Print("Can't open ~/Music directory")
-			os.Exit(1)
+			log.Fatal("Can't open ~/Music directory")
 		}
 	}
 
 	fileList, err := getSongList(songDir)
 	if err != nil {
-		log.Print("Can't get song list")
-		os.Exit(1)
+		log.Fatal("Can't get song list")
 	}
 	songs := make([]Song, 0, len(fileList))
 
@@ -43,8 +41,8 @@ func main() {
 	}
 
 	addSongsInterface(len(songs), songs)
-	songSelectCallback = func (num int) {
-		playSong(fileList[num])
+	songSelectCallback = func (num int) (int, error) {
+		return playSong(fileList[num])
 	}
 	startInterface()
 }

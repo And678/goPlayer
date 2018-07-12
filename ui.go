@@ -5,21 +5,21 @@ import (
 	"fmt"
 )
 
-type selectCallback func (int);
+type selectCallback func (int) (int, error);
 
-var songSelectCallback selectCallback = func (int) {
-	
-}
+var songSelectCallback selectCallback
 
 var infoWidget * ui.List
 var playlistWidget * ui.List
-var scrollerWidget * ui.Par
+var scrollerWidget * ui.Gauge
 var visualizerWidget * ui.Par
 var controlsWidget * ui.Par
 var fullSongList []Song
 
 var interfaceSongList []string
 var currentSongInterface int = -1
+var songPosition = 0
+var currentSongLength = 0
 
 func alignInterface() {
 	termHeight := ui.TermHeight()
@@ -51,7 +51,7 @@ func startInterface() {
 
 	infoWidget = ui.NewList()
 	playlistWidget = ui.NewList()
-	scrollerWidget = ui.NewPar("")
+	scrollerWidget = ui.NewGauge()
 	visualizerWidget = ui.NewPar("")
 	controlsWidget = ui.NewPar("")
 	styleInterface()
@@ -71,11 +71,24 @@ func startInterface() {
 	ui.Handle("/sys/kbd/q", func(ui.Event) {
 		ui.StopLoop()
 	})
+	ui.Handle("timer/1s", func(ui.Event) {
+		songPosition++
+
+		if (currentSongLength != 0) {
+			scrollerWidget.Percent = int(float32(songPosition) / float32(currentSongLength) * 100)
+			ui.Clear()
+			ui.Render(ui.Body)
+		}
+	})
 	ui.Handle("/sys/kbd/<enter>", func(ui.Event) {
-		//songSelectCallback(currentSongInterface)
-		renderCurrentSongInterface(currentSongInterface)
-		ui.Clear()
-		ui.Render(ui.Body)
+		songPosition = 0
+		var err error
+		currentSongLength, err = songSelectCallback(currentSongInterface)
+		if err == nil {
+			renderCurrentSongInterface(currentSongInterface)
+			ui.Clear()
+			ui.Render(ui.Body)
+		}
 	})
 	ui.Handle("/sys/kbd/<up>", func(ui.Event) {
 		songUp()
