@@ -1,19 +1,19 @@
 package main
 
 import (
-	ui "github.com/gizak/termui"
 	"fmt"
+	ui "github.com/gizak/termui"
 )
 
-type selectCallback func (int) (int, error);
+type selectCallback func(Song) (int, error)
 
 var songSelectCallback selectCallback
 
-var infoWidget * ui.List
-var playlistWidget * ui.List
-var scrollerWidget * ui.Gauge
-var visualizerWidget * ui.Par
-var controlsWidget * ui.Par
+var infoWidget *ui.List
+var playlistWidget *ui.List
+var scrollerWidget *ui.Gauge
+var visualizerWidget *ui.Par
+var controlsWidget *ui.Par
 var fullSongList []Song
 
 var interfaceSongList []string
@@ -24,7 +24,7 @@ var currentSongLength = 0
 func alignInterface() {
 	termHeight := ui.TermHeight()
 	playlistWidget.Height = termHeight - controlsWidget.Height
-	visualizerWidget.Height = termHeight - infoWidget.Height  - controlsWidget.Height - scrollerWidget.Height
+	visualizerWidget.Height = termHeight - infoWidget.Height - controlsWidget.Height - scrollerWidget.Height
 	ui.Body.Width = ui.TermWidth()
 	ui.Body.Align()
 }
@@ -36,9 +36,11 @@ func styleInterface() {
 	visualizerWidget.BorderLabel = "Visualizer"
 	visualizerWidget.BorderFg = ui.ColorGreen
 	controlsWidget.BorderFg = ui.ColorGreen
+	controlsWidget.Border = false
 	infoWidget.Height = 6
 	controlsWidget.Height = 1
 	scrollerWidget.Height = 3
+
 }
 
 func startInterface() {
@@ -53,17 +55,17 @@ func startInterface() {
 	playlistWidget = ui.NewList()
 	scrollerWidget = ui.NewGauge()
 	visualizerWidget = ui.NewPar("")
-	controlsWidget = ui.NewPar("")
+	controlsWidget = ui.NewPar("[p](fg-black,bg-white)[ Pause](fg-black,bg-green) [Esc](fg-black,bg-white)[ Stop](fg-black,bg-green) [q](fg-black,bg-white)[ Exit](fg-black,bg-green) [q](fg-black,bg-white)[ Exit](fg-black,bg-green)")
 	styleInterface()
 
-	playlistWidget.Items = interfaceSongList;
-	
+	playlistWidget.Items = interfaceSongList
+
 	ui.Body.AddRows(
-			ui.NewRow(
-				ui.NewCol(6, 0, infoWidget, scrollerWidget, visualizerWidget),
-				ui.NewCol(6, 0, playlistWidget)),
-			ui.NewRow(
-				ui.NewCol(12, 0, controlsWidget)))
+		ui.NewRow(
+			ui.NewCol(6, 0, infoWidget, scrollerWidget, visualizerWidget),
+			ui.NewCol(6, 0, playlistWidget)),
+		ui.NewRow(
+			ui.NewCol(12, 0, controlsWidget)))
 
 	alignInterface()
 	ui.Render(ui.Body)
@@ -74,7 +76,7 @@ func startInterface() {
 	ui.Handle("timer/1s", func(ui.Event) {
 		songPosition++
 
-		if (currentSongLength != 0) {
+		if currentSongLength != 0 {
 			scrollerWidget.Percent = int(float32(songPosition) / float32(currentSongLength) * 100)
 			ui.Clear()
 			ui.Render(ui.Body)
@@ -83,7 +85,7 @@ func startInterface() {
 	ui.Handle("/sys/kbd/<enter>", func(ui.Event) {
 		songPosition = 0
 		var err error
-		currentSongLength, err = songSelectCallback(currentSongInterface)
+		currentSongLength, err = songSelectCallback(fullSongList[currentSongInterface])
 		if err == nil {
 			renderCurrentSongInterface(currentSongInterface)
 			ui.Clear()
@@ -113,19 +115,20 @@ func startInterface() {
 func renderCurrentSongInterface(num int) {
 	infoWidget.Items = []string{
 		"Artist: " + fullSongList[num].Artist(),
-		"Title:  " + fullSongList[num].Title(), 
+		"Title:  " + fullSongList[num].Title(),
 		"Album:  " + fullSongList[num].Album(),
 	}
 }
 
 func addSongsInterface(prefix int, inputList []Song) {
+	println(len(inputList))
 	interfaceSongList = make([]string, len(inputList))
 	fullSongList = inputList
 	for i, v := range inputList {
-		if (v.Metadata != nil) {
+		if v.Metadata != nil {
 			interfaceSongList[i] = fmt.Sprintf("[%d] %s - %s", i, v.Artist(), v.Title())
 		} else {
-			interfaceSongList[i] = fmt.Sprintf("[%d] %s", i, v.path[prefix : ])
+			interfaceSongList[i] = fmt.Sprintf("[%d] %s", i, v.path[prefix:])
 		}
 	}
 	chooseSongInterface(0)
@@ -133,21 +136,21 @@ func addSongsInterface(prefix int, inputList []Song) {
 }
 
 func songDown() {
-	if (currentSongInterface < len(interfaceSongList) - 1) {
+	if currentSongInterface < len(interfaceSongList)-1 {
 		chooseSongInterface(currentSongInterface + 1)
 	}
 }
 
 func songUp() {
-	if (currentSongInterface > 0) {
+	if currentSongInterface > 0 {
 		chooseSongInterface(currentSongInterface - 1)
 	}
 }
 
 func chooseSongInterface(num int) {
-	if (currentSongInterface != -1) {
-		interfaceSongList[currentSongInterface] = 
-		interfaceSongList[currentSongInterface][1: len(interfaceSongList[currentSongInterface]) - 20]
+	if currentSongInterface != -1 {
+		interfaceSongList[currentSongInterface] =
+			interfaceSongList[currentSongInterface][1 : len(interfaceSongList[currentSongInterface])-20]
 	}
 	currentSongInterface = num
 	interfaceSongList[num] = fmt.Sprintf("[%s](fg-black,bg-green)", interfaceSongList[num])

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mitchellh/go-homedir"
 	"github.com/dhowden/tag"
+	"github.com/mitchellh/go-homedir"
 	"log"
 	"os"
 )
@@ -19,7 +19,7 @@ func main() {
 		songDir = os.Args[1]
 	} else {
 		songDir, err = homedir.Expand("~/Music/")
-		if (err != nil) {
+		if err != nil {
 			log.Fatal("Can't open ~/Music directory")
 		}
 	}
@@ -31,18 +31,20 @@ func main() {
 	songs := make([]Song, 0, len(fileList))
 
 	for _, fileName := range fileList {
-		currentFile, _ := os.Open(fileName) // TODO: handle the error
-		metadata, _ := tag.ReadFrom(currentFile)
-		songs = append(songs, Song{
-			Metadata: metadata,
-			path: fileName,
-		})
+		currentFile, err := os.Open(fileName)
+		if err == nil {
+			metadata, _ := tag.ReadFrom(currentFile)
+			songs = append(songs, Song{
+				Metadata: metadata,
+				path:     fileName,
+			})
+		}
 		currentFile.Close()
 	}
-
-	addSongsInterface(len(songs), songs)
-	songSelectCallback = func (num int) (int, error) {
-		return playSong(fileList[num])
+	if (len(songs) == 0) {
+		log.Fatal("Could find any songs to play")
 	}
+	addSongsInterface(len(songs), songs)
+	songSelectCallback = playSong
 	startInterface()
 }

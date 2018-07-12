@@ -5,13 +5,11 @@ import (
 	"path/filepath"
 )
 
-
-
 func getSongList(input string) ([]string, error) {
 
 	result := make([]string, 0)
 	addPath := func(path string, info os.FileInfo, err error) error {
-		if (err != nil) {
+		if err != nil {
 			return err
 		}
 
@@ -26,7 +24,7 @@ func getSongList(input string) ([]string, error) {
 
 }
 
-func Contains(arr []string ,input string) bool {
+func Contains(arr []string, input string) bool {
 	for _, v := range arr {
 		if v == input {
 			return true
