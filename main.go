@@ -44,7 +44,11 @@ func main() {
 	if (len(songs) == 0) {
 		log.Fatal("Could find any songs to play")
 	}
-	addSongsInterface(len(songs), songs)
-	songSelectCallback = playSong
-	startInterface()
+	userInterface, err := NewUi(songs, len(songDir));
+	if err != nil {
+		log.Fatal(err)
+	}
+	userInterface.OnSelect = playSong
+	userInterface.Start()
+	userInterface.Close()
 }
