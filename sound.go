@@ -12,6 +12,7 @@ import (
 )
 
 var supportedFormats = []string{".mp3", ".wav", ".flac"}
+var mainCtrl * beep.Ctrl
 
 func playSong(input Song) (int, error) {
 	f, err := os.Open(input.path)
@@ -29,11 +30,17 @@ func playSong(input Song) (int, error) {
 	case ".flac":
 		s, format, err = flac.Decode(f)
 	}
-
 	if err != nil {
 		return 0, err
 	}
+	mainCtrl = &beep.Ctrl{Streamer: s}
 	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-	speaker.Play(s)
+	speaker.Play(mainCtrl)
 	return int(float32(s.Len()) / float32(format.SampleRate)), nil
+}
+
+func pauseSong(state bool) {
+	speaker.Lock()
+	mainCtrl.Paused = state
+	speaker.Unlock()
 }

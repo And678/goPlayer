@@ -49,6 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 	userInterface.OnSelect = playSong
+	userInterface.OnPause = pauseSong
 	userInterface.Start()
 	userInterface.Close()
 }
