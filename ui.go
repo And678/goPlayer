@@ -15,6 +15,7 @@ const (
 
 type selectCallback func(Song) (int, error)
 type pauseCallback func(bool)
+type seekCallback func(int) error
 
 type Ui struct {
 	infoList		*termui.List
@@ -33,6 +34,7 @@ type Ui struct {
 
 	OnSelect		selectCallback
 	OnPause			pauseCallback
+	OnSeek			seekCallback
 
 	state			uiState
 }
@@ -109,7 +111,21 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 			ui.songPos = 0
 		}
 	})
-	termui.Handle("/sys/kbd/r", func(termui.Event) {
+
+	termui.Handle("/sys/kbd/<right>", func(termui.Event) {
+		ui.songPos += 10
+		ui.OnSeek(ui.songPos)
+	})
+
+	termui.Handle("/sys/kbd/<left>", func(termui.Event) {
+		ui.songPos -= 10
+		if (ui.songPos < 0) {
+			ui.songPos = 0
+		}
+		ui.OnSeek(ui.songPos)
+	})
+
+	termui.Handle("/sys/kbd/<escape>", func(termui.Event) {
 		ui.playSong(ui.songNum)
 		ui.OnPause(true)
 		ui.state = Stopped

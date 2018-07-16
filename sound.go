@@ -13,14 +13,15 @@ import (
 
 var supportedFormats = []string{".mp3", ".wav", ".flac"}
 var mainCtrl * beep.Ctrl
+var s beep.StreamSeekCloser
+var format beep.Format
 
 func playSong(input Song) (int, error) {
 	f, err := os.Open(input.path)
 	if err != nil {
 		return 0, err
 	}
-	var s beep.StreamSeekCloser
-	var format beep.Format
+	
 
 	switch fileExt := filepath.Ext(input.path); fileExt {
 	case ".mp3":
@@ -43,4 +44,11 @@ func pauseSong(state bool) {
 	speaker.Lock()
 	mainCtrl.Paused = state
 	speaker.Unlock()
+}
+
+func seek(pos int) error {
+	speaker.Lock()
+	err := s.Seek(pos * int(format.SampleRate))
+	speaker.Unlock()
+	return err
 }
