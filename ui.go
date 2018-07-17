@@ -21,10 +21,11 @@ type Ui struct {
 	infoList		*termui.List
 	playList		*termui.List
 	scrollerGauge	*termui.Gauge
-	visualizer		*termui.Par
+	visualizer		*termui.BarChart
 	controlsPar		*termui.Par
 
 	songs 			[]Song
+	songNames		[]string
 
 	songNum			int
 
@@ -60,12 +61,20 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	ui.scrollerGauge = termui.NewGauge()
 	ui.scrollerGauge.Height = 3
 	
-	ui.visualizer = termui.NewPar("")
+	ui.visualizer = termui.NewBarChart()
+	ui.visualizer.BarColor = termui.ColorRed
+	ui.visualizer.BarGap = 0
+	ui.visualizer.BarWidth = 1
 	ui.visualizer.BorderLabel = "Visualizer"
 	ui.visualizer.BorderFg = termui.ColorGreen
 
-	ui.controlsPar = termui.NewPar("[p](fg-black,bg-white)[ Pause](fg-black,bg-green) [Esc](fg-black,bg-white)[ Stop](fg-black,bg-green) [left](fg-black,bg-white)[ Forward](fg-black,bg-green) [q](fg-black,bg-white)[ Exit](fg-black,bg-green)")
-	ui.controlsPar.BorderFg = termui.ColorGreen
+	ui.controlsPar = termui.NewPar(
+		"[ Enter ](fg-black,bg-white)[ Select ](fg-black,bg-green) " +
+		"[ p ](fg-black,bg-white)[ Pause ](fg-black,bg-green) " +
+		"[Esc](fg-black,bg-white)[ Stop ](fg-black,bg-green) " +
+		"[Right](fg-black,bg-white)[ Forward + 10s ](fg-black,bg-green) " +
+		"[Left](fg-black,bg-white)[ Forward - 10s ](fg-black,bg-green) " +
+		"[ q ](fg-black,bg-white)[ Exit ](fg-black,bg-green) ")
 	ui.controlsPar.Border = false
 	ui.controlsPar.Height = 1
 
@@ -154,15 +163,15 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 		ui.realign()
 	})
 
-	songInter := make([]string, len(ui.songs))
+	ui.songNames = make([]string, len(ui.songs))
 	for i, v := range ui.songs {
 		if v.Metadata != nil {
-			songInter[i] = fmt.Sprintf("[%d] %s - %s", i + 1, v.Artist(), v.Title())
+			ui.songNames[i] = fmt.Sprintf("[%d] %s - %s", i + 1, v.Artist(), v.Title())
 		} else {
-			songInter[i] = fmt.Sprintf("[%d] %s", i + 1, v.path[pathPrefix:])
+			ui.songNames[i] = fmt.Sprintf("[%d] %s", i + 1, v.path[pathPrefix:])
 		}
 	}
-	ui.playList.Items = songInter
+	ui.playList.Items = ui.songNames
 	ui.setSong(0, false)
 
 	return ui, nil
@@ -222,7 +231,7 @@ func (ui * Ui) renderSong() {
 //Song selection
 
 func (ui * Ui) songDown() {
-	if ui.songSel < len(ui.playList.Items) - 1 {
+	if ui.songSel < len(ui.songNames) - 1 {
 		ui.setSong(ui.songSel + 1, true)
 	}
 }
@@ -234,10 +243,14 @@ func (ui * Ui) songUp() {
 }
 
 func (ui * Ui) setSong(num int, unset bool) {
+	skip := 0
+	for (num - skip >= ui.playList.Height - 2) {
+		skip +=	ui.playList.Height - 2
+	}
 	if unset {
-		ui.playList.Items[ui.songSel] =
-			ui.playList.Items[ui.songSel][1 : len(ui.playList.Items[ui.songSel]) - 20]
+		ui.songNames[ui.songSel] = ui.songNames[ui.songSel][1 : len(ui.songNames[ui.songSel]) - 20]
 	}
 	ui.songSel = num
-	ui.playList.Items[num] = fmt.Sprintf("[%s](fg-black,bg-green)", ui.playList.Items[num])
+	ui.songNames[num] = fmt.Sprintf("[%s](fg-black,bg-green)", ui.songNames[num])
+	ui.playList.Items = ui.songNames[skip:]
 }
