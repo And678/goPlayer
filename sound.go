@@ -12,7 +12,7 @@ import (
 )
 
 var supportedFormats = []string{".mp3", ".wav", ".flac"}
-var mainCtrl * beep.Ctrl
+var mainCtrl *beep.Ctrl
 var s beep.StreamSeekCloser
 var format beep.Format
 
@@ -21,7 +21,6 @@ func playSong(input Song) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	
 
 	switch fileExt := filepath.Ext(input.path); fileExt {
 	case ".mp3":

@@ -41,10 +41,10 @@ func main() {
 		}
 		currentFile.Close()
 	}
-	if (len(songs) == 0) {
+	if len(songs) == 0 {
 		log.Fatal("Could find any songs to play")
 	}
-	userInterface, err := NewUi(songs, len(songDir));
+	userInterface, err := NewUi(songs, len(songDir))
 	if err != nil {
 		log.Fatal(err)
 	}
