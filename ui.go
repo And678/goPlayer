@@ -21,7 +21,7 @@ type Ui struct {
 	infoList		*termui.List
 	playList		*termui.List
 	scrollerGauge	*termui.Gauge
-	visualizer		*termui.BarChart
+	volumeGauge		*termui.Gauge
 	controlsPar		*termui.Par
 
 	songs 			[]Song
@@ -52,21 +52,18 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	ui.infoList = termui.NewList()
 	ui.infoList.BorderLabel = "Song info"
 	ui.infoList.BorderFg = termui.ColorGreen
-	ui.infoList.Height = 6
 	
 	ui.playList = termui.NewList()
 	ui.playList.BorderLabel = "Playlist"
 	ui.playList.BorderFg = termui.ColorGreen
 	
 	ui.scrollerGauge = termui.NewGauge()
+	ui.scrollerGauge.BorderLabel = "Stopped"
 	ui.scrollerGauge.Height = 3
-	
-	ui.visualizer = termui.NewBarChart()
-	ui.visualizer.BarColor = termui.ColorRed
-	ui.visualizer.BarGap = 0
-	ui.visualizer.BarWidth = 1
-	ui.visualizer.BorderLabel = "Visualizer"
-	ui.visualizer.BorderFg = termui.ColorGreen
+
+	ui.volumeGauge = termui.NewGauge()
+	ui.volumeGauge.BorderLabel = "Volume"
+	ui.volumeGauge.Height = 3
 
 	ui.controlsPar = termui.NewPar(
 		"[ Enter ](fg-black,bg-white)[ Select ](fg-black,bg-green) " +
@@ -80,7 +77,7 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 
 	termui.Body.AddRows(
 		termui.NewRow(
-			termui.NewCol(6, 0, ui.infoList, ui.scrollerGauge, ui.visualizer),
+			termui.NewCol(6, 0, ui.infoList, ui.scrollerGauge, ui.volumeGauge),
 			termui.NewCol(6, 0, ui.playList)),
 		termui.NewRow(
 			termui.NewCol(12, 0, ui.controlsPar)))
@@ -98,6 +95,7 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 		} else {
 			ui.OnPause(false)
 			ui.state = Playing
+		
 		}
 		ui.renderSong()
 	})
@@ -106,6 +104,7 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 			ui.songPos++
 			if ui.songLen != 0 {
 				ui.scrollerGauge.Percent = int(float32(ui.songPos) / float32(ui.songLen) * 100)
+				ui.scrollerGauge.Label = fmt.Sprintf("%d:%.2d / %d:%.2d", ui.songPos / 60, ui.songPos % 60, ui.songLen / 60, ui.songLen % 60)
 				if ui.scrollerGauge.Percent >= 100 {
 					ui.songNum++;
 					if (ui.songNum >= len(ui.songs)) {
@@ -151,6 +150,22 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 		ui.songUp()
 		termui.Clear()
 		termui.Render(termui.Body)
+	})
+
+	termui.Handle("/sys/kbd/=", func(termui.Event) {
+		println("wew")
+	})
+
+	termui.Handle("/sys/kbd/+", func(termui.Event) {
+		println("wew")
+	})
+
+	termui.Handle("/sys/kbd/-", func(termui.Event) {
+		println("wew")
+	})
+
+	termui.Handle("/sys/kbd/_", func(termui.Event) {
+		println("wew")
 	})
 
 	termui.Handle("/sys/kbd/<down>", func(termui.Event) {
@@ -201,12 +216,13 @@ func (ui * Ui) playSong(number int) {
 func (ui * Ui) realign() {
 	termHeight := termui.TermHeight()
 	ui.playList.Height = termHeight - ui.controlsPar.Height
-	ui.visualizer.Height = termHeight - ui.infoList.Height - ui.controlsPar.Height - ui.scrollerGauge.Height
+	ui.infoList.Height = termHeight - ui.controlsPar.Height - ui.scrollerGauge.Height - ui.volumesGauge.Height
 	termui.Body.Width = termui.TermWidth()
 	termui.Body.Align()
 	termui.Clear()
 	termui.Render(termui.Body)
 }
+
 func (ui * Ui) renderSong() {
 	var status string
 	switch ui.state {

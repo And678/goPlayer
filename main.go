@@ -52,5 +52,5 @@ func main() {
 	userInterface.OnPause = pauseSong
 	userInterface.OnSeek = seek
 	userInterface.Start()
-	userInterface.Close()
+	defer userInterface.Close()
 }
