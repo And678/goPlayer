@@ -1,8 +1,10 @@
 # GoPlayer
 A terminal based audio player
 
-## Features
 ![screenshot](../assets/screenshot.png)
+
+## Features
+
 * Supports mp3, flac, wav formats
 * Displays metadata
 * Volume controls
