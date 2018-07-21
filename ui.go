@@ -55,10 +55,11 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	ui.volume = 100
 
 	ui.songs = songList
-
+	ui.songNum = -1
 	ui.infoList = termui.NewList()
 	ui.infoList.BorderLabel = "Song info"
 	ui.infoList.BorderFg = termui.ColorGreen
+	ui.infoList.Overflow = "wrap"
 
 	ui.playList = termui.NewList()
 	ui.playList.BorderLabel = "Playlist"
@@ -74,12 +75,14 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	ui.volumeGauge.Percent = ui.volume
 
 	ui.controlsPar = termui.NewPar(
-		"[ Enter ](fg-black,bg-white)[ Select ](fg-black,bg-green) " +
-			"[ p ](fg-black,bg-white)[ Pause ](fg-black,bg-green) " +
-			"[Esc](fg-black,bg-white)[ Stop ](fg-black,bg-green) " +
-			"[Right](fg-black,bg-white)[ +10s ](fg-black,bg-green) " +
-			"[Left](fg-black,bg-white)[ -10s ](fg-black,bg-green) " +
-			"[ q ](fg-black,bg-white)[ Exit ](fg-black,bg-green) ")
+		"[ Enter ](fg-black,bg-white)[Select](fg-black,bg-green) " +
+			"[ p ](fg-black,bg-white)[Play/Pause](fg-black,bg-green) " +
+			"[Esc](fg-black,bg-white)[Stop](fg-black,bg-green) " +
+			"[Right](fg-black,bg-white)[+10s](fg-black,bg-green) " +
+			"[Left](fg-black,bg-white)[-10s](fg-black,bg-green) " +
+			"[ + ](fg-black,bg-white)[+Volume](fg-black,bg-green) " +
+			"[ - ](fg-black,bg-white)[-Volume](fg-black,bg-green) " +
+			"[ q ](fg-black,bg-white)[Exit](fg-black,bg-green) ")
 	ui.controlsPar.Border = false
 	ui.controlsPar.Height = 1
 
@@ -97,15 +100,17 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	})
 
 	termui.Handle("/sys/kbd/p", func(termui.Event) {
-		if ui.state == Playing {
-			ui.OnPause(true)
-			ui.state = Paused
-		} else {
-			ui.OnPause(false)
-			ui.state = Playing
+		if ui.songNum != -1 {
+			if ui.state == Playing {
+				ui.OnPause(true)
+				ui.state = Paused
+			} else {
+				ui.OnPause(false)
+				ui.state = Playing
 
+			}
+			ui.renderStatus()
 		}
-		ui.renderSong()
 	})
 	termui.Handle("timer/1s", func(termui.Event) {
 		if ui.state == Playing {
@@ -129,16 +134,20 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	})
 
 	termui.Handle("/sys/kbd/<right>", func(termui.Event) {
-		ui.songPos += 10
-		ui.OnSeek(ui.songPos)
+		if ui.songNum != -1 {
+			ui.songPos += 10
+			ui.OnSeek(ui.songPos)
+		}
 	})
 
 	termui.Handle("/sys/kbd/<left>", func(termui.Event) {
-		ui.songPos -= 10
-		if ui.songPos < 0 {
-			ui.songPos = 0
+		if ui.songNum != -1 {
+			ui.songPos -= 10
+			if ui.songPos < 0 {
+				ui.songPos = 0
+			}
+			ui.OnSeek(ui.songPos)
 		}
-		ui.OnSeek(ui.songPos)
 	})
 
 	termui.Handle("/sys/kbd/<escape>", func(termui.Event) {
@@ -146,7 +155,8 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 		ui.OnPause(true)
 		ui.state = Stopped
 		ui.scrollerGauge.Percent = 0
-		ui.renderSong()
+		ui.scrollerGauge.Label = "0:00 / 0:00"
+		ui.renderStatus()
 	})
 
 	termui.Handle("/sys/kbd/<enter>", func(termui.Event) {
@@ -215,6 +225,7 @@ func (ui *Ui) playSong(number int) {
 	if err == nil {
 		ui.state = Playing
 		ui.renderSong()
+		ui.renderStatus()
 	}
 }
 
@@ -231,22 +242,38 @@ func (ui *Ui) realign() {
 }
 
 func (ui *Ui) renderSong() {
+	if ui.songSel != -1 {
+		lyrics := ui.songs[ui.songSel].Lyrics()
+		trackNum, _ := ui.songs[ui.songSel].Track()
+		ui.infoList.Items = []string{
+			"[Artist:](fg-green) " + ui.songs[ui.songSel].Artist(),
+			"[Title:](fg-green)  " + ui.songs[ui.songSel].Title(),
+			"[Album:](fg-green)  " + ui.songs[ui.songSel].Album(),
+			fmt.Sprintf("[Track:](fg-green)  %d", trackNum),
+			"[Genre:](fg-green)  " + ui.songs[ui.songSel].Genre(),
+			fmt.Sprintf("[Year:](fg-green)   %d", ui.songs[ui.songSel].Year()),
+		}
+		if lyrics != "" {
+			ui.infoList.Items = append(ui.infoList.Items, "Lyrics:  "+lyrics)
+		}
+	} else {
+		ui.infoList.Items = []string{}
+	}
+	termui.Clear()
+	termui.Render(termui.Body)
+}
+
+func (ui *Ui) renderStatus() {
 	var status string
 	switch ui.state {
 	case Playing:
-		status = "[(Playing)](fg-green)"
+		status = "[(Playing)](fg-black,bg-green)"
 	case Paused:
-		status = "[(Paused)](fg-yellow)"
+		status = "[(Paused)](fg-black,bg-yellow)"
 	case Stopped:
-		status = "[(Stopped)](fg-red)"
+		status = "[(Stopped)](fg-black,bg-red)"
 	}
-
-	ui.infoList.Items = []string{
-		"Artist: " + ui.songs[ui.songSel].Artist(),
-		"Title:  " + ui.songs[ui.songSel].Title(),
-		"Album:  " + ui.songs[ui.songSel].Album(),
-		status,
-	}
+	ui.scrollerGauge.BorderLabel = status
 	termui.Clear()
 	termui.Render(termui.Body)
 }
