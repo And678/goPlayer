@@ -16,6 +16,7 @@ const (
 type selectCallback func(Song) (int, error)
 type pauseCallback func(bool)
 type seekCallback func(int) error
+type volumeCallback func(int)
 
 type Ui struct {
 	infoList      *termui.List
@@ -27,6 +28,8 @@ type Ui struct {
 	songs     []Song
 	songNames []string
 
+	volume int
+
 	songNum int
 
 	songSel int
@@ -36,6 +39,7 @@ type Ui struct {
 	OnSelect selectCallback
 	OnPause  pauseCallback
 	OnSeek   seekCallback
+	OnVolume volumeCallback
 
 	state uiState
 }
@@ -47,6 +51,9 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	}
 
 	ui := new(Ui)
+
+	ui.volume = 100
+
 	ui.songs = songList
 
 	ui.infoList = termui.NewList()
@@ -64,13 +71,14 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	ui.volumeGauge = termui.NewGauge()
 	ui.volumeGauge.BorderLabel = "Volume"
 	ui.volumeGauge.Height = 3
+	ui.volumeGauge.Percent = ui.volume
 
 	ui.controlsPar = termui.NewPar(
 		"[ Enter ](fg-black,bg-white)[ Select ](fg-black,bg-green) " +
 			"[ p ](fg-black,bg-white)[ Pause ](fg-black,bg-green) " +
 			"[Esc](fg-black,bg-white)[ Stop ](fg-black,bg-green) " +
-			"[Right](fg-black,bg-white)[ Forward + 10s ](fg-black,bg-green) " +
-			"[Left](fg-black,bg-white)[ Forward - 10s ](fg-black,bg-green) " +
+			"[Right](fg-black,bg-white)[ +10s ](fg-black,bg-green) " +
+			"[Left](fg-black,bg-white)[ -10s ](fg-black,bg-green) " +
 			"[ q ](fg-black,bg-white)[ Exit ](fg-black,bg-green) ")
 	ui.controlsPar.Border = false
 	ui.controlsPar.Height = 1
@@ -153,19 +161,19 @@ func NewUi(songList []Song, pathPrefix int) (*Ui, error) {
 	})
 
 	termui.Handle("/sys/kbd/=", func(termui.Event) {
-		println("wew")
+		ui.volumeUp()
 	})
 
 	termui.Handle("/sys/kbd/+", func(termui.Event) {
-		println("wew")
+		ui.volumeUp()
 	})
 
 	termui.Handle("/sys/kbd/-", func(termui.Event) {
-		println("wew")
+		ui.volumeDown()
 	})
 
 	termui.Handle("/sys/kbd/_", func(termui.Event) {
-		println("wew")
+		ui.volumeDown()
 	})
 
 	termui.Handle("/sys/kbd/<down>", func(termui.Event) {
@@ -255,6 +263,26 @@ func (ui *Ui) songUp() {
 	if ui.songSel > 0 {
 		ui.setSong(ui.songSel-1, true)
 	}
+}
+
+func (ui *Ui) volumeUp() {
+	if ui.volume < 100 {
+		ui.volume += 5
+	}
+	ui.volumeGauge.Percent = ui.volume
+	ui.OnVolume(ui.volume)
+	termui.Clear()
+	termui.Render(termui.Body)
+}
+
+func (ui *Ui) volumeDown() {
+	if ui.volume > 0 {
+		ui.volume -= 5
+	}
+	ui.volumeGauge.Percent = ui.volume
+	ui.OnVolume(ui.volume)
+	termui.Clear()
+	termui.Render(termui.Body)
 }
 
 func (ui *Ui) setSong(num int, unset bool) {

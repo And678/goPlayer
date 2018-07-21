@@ -51,6 +51,7 @@ func main() {
 	userInterface.OnSelect = playSong
 	userInterface.OnPause = pauseSong
 	userInterface.OnSeek = seek
+	userInterface.OnVolume = setVolue
 	userInterface.Start()
 	defer userInterface.Close()
 }
